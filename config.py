@@ -12,9 +12,11 @@ AUTO_SWITCH_ON_TIMEOUT = True  # 超时时自动切换到备用API
 
 # 数据库配置
 import os
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///data/users.db')
-if DATABASE_URL.startswith('postgres://'):
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+elif not DATABASE_URL:
+    DATABASE_URL = 'sqlite:///data/users.db'
 
 # 知识库配置
 KNOWLEDGE_PATH = "data/knowledge.json"

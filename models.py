@@ -1,6 +1,10 @@
 import sqlite3
-import psycopg2
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    HAS_POSTGRES = True
+except ImportError:
+    HAS_POSTGRES = False
 from datetime import datetime
 from pathlib import Path
 import bcrypt
@@ -9,7 +13,7 @@ import config
 class Database:
     def __init__(self, db_url=None):
         self.db_url = db_url or config.DATABASE_URL
-        self.is_postgres = self.db_url.startswith('postgresql://')
+        self.is_postgres = self.db_url.startswith('postgresql://') and HAS_POSTGRES
         
         if not self.is_postgres:
             db_path = self.db_url.replace('sqlite:///', '')
@@ -194,11 +198,10 @@ class Database:
             
             return True, "注册成功", user_id
             
-        except (sqlite3.IntegrityError, psycopg2.IntegrityError) as e:
-            if 'username' in str(e):
-                return False, "用户名已存在", None
-            return False, "注册失败", None
         except Exception as e:
+            error_msg = str(e).lower()
+            if 'unique' in error_msg or 'username' in error_msg:
+                return False, "用户名已存在", None
             return False, f"注册失败: {str(e)}", None
     
     def verify_user(self, username, password):
