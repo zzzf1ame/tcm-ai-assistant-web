@@ -52,10 +52,10 @@ def register():
         data = request.json
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
-        phone = data.get('phone', '').strip()
+        email = data.get('email', '').strip()
         
-        if not username or not password or not phone:
-            return jsonify({'success': False, 'message': '请填写完整信息'})
+        if not username or not password:
+            return jsonify({'success': False, 'message': '请填写用户名和密码'})
         
         if len(username) < 3 or len(username) > 20:
             return jsonify({'success': False, 'message': '用户名长度3-20个字符'})
@@ -63,14 +63,11 @@ def register():
         if len(password) < 6:
             return jsonify({'success': False, 'message': '密码至少6个字符'})
         
-        if len(phone) != 11 or not phone.isdigit():
-            return jsonify({'success': False, 'message': '请输入正确的手机号'})
-        
         ip = get_client_ip()
         if not db.check_ip_register_limit(ip):
             return jsonify({'success': False, 'message': '该IP今日注册次数已达上限'})
         
-        success, message, user_id = db.create_user(username, password, phone, ip)
+        success, message, user_id = db.create_user(username, password, email, ip)
         
         if success:
             session['user_id'] = user_id

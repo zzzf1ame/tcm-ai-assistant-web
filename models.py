@@ -21,7 +21,7 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                phone TEXT UNIQUE NOT NULL,
+                email TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_login TIMESTAMP,
                 is_vip BOOLEAN DEFAULT 0,
@@ -80,7 +80,7 @@ class Database:
         conn.commit()
         conn.close()
     
-    def create_user(self, username, password, phone, ip):
+    def create_user(self, username, password, email, ip):
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -88,9 +88,9 @@ class Database:
             password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             
             cursor.execute("""
-                INSERT INTO users (username, password_hash, phone)
+                INSERT INTO users (username, password_hash, email)
                 VALUES (?, ?, ?)
-            """, (username, password_hash, phone))
+            """, (username, password_hash, email if email else None))
             
             user_id = cursor.lastrowid
             
@@ -109,8 +109,6 @@ class Database:
         except sqlite3.IntegrityError as e:
             if 'username' in str(e):
                 return False, "用户名已存在", None
-            elif 'phone' in str(e):
-                return False, "手机号已注册", None
             return False, "注册失败", None
         except Exception as e:
             return False, f"注册失败: {str(e)}", None
@@ -121,7 +119,7 @@ class Database:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT id, username, password_hash, phone
+                SELECT id, username, password_hash, email
                 FROM users WHERE username = ?
             """, (username,))
             
@@ -131,13 +129,13 @@ class Database:
             if not row:
                 return False, "用户名或密码错误", None
             
-            user_id, username, password_hash, phone = row
+            user_id, username, password_hash, email = row
             
             if bcrypt.checkpw(password.encode('utf-8'), password_hash):
                 return True, "登录成功", {
                     'id': user_id,
                     'username': username,
-                    'phone': phone
+                    'email': email
                 }
             else:
                 return False, "用户名或密码错误", None

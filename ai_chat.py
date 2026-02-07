@@ -178,11 +178,9 @@ class TCMAIChat:
                 success, response = self.chat_qwen(messages, system_prompt)
                 
                 # 如果千问失败且开启自动切换，切换到DeepSeek
-                if not success and config.AUTO_SWITCH_ON_TIMEOUT and ("超时" in response or "连接" in response):
+                if not success and config.AUTO_SWITCH_ON_TIMEOUT and ("超时" in response or "连接" in response or "API错误" in response):
                     print(f"[自动切换] 通义千问失败: {response}，切换到DeepSeek")
                     success, response = self.chat_deepseek(messages, system_prompt)
-                    if success:
-                        response = f"{response}\n\n_（本次使用DeepSeek备用服务）_"
                 
                 return success, response
                 
@@ -190,11 +188,9 @@ class TCMAIChat:
                 success, response = self.chat_deepseek(messages, system_prompt)
                 
                 # 如果DeepSeek失败且开启自动切换，切换到千问
-                if not success and config.AUTO_SWITCH_ON_TIMEOUT and ("超时" in response or "连接" in response):
+                if not success and config.AUTO_SWITCH_ON_TIMEOUT and ("超时" in response or "连接" in response or "API错误" in response):
                     print(f"[自动切换] DeepSeek失败: {response}，切换到通义千问")
                     success, response = self.chat_qwen(messages, system_prompt)
-                    if success:
-                        response = f"{response}\n\n_（本次使用通义千问备用服务）_"
                 
                 return success, response
             else:

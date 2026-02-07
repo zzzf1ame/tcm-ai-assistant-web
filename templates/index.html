@@ -35,7 +35,7 @@
                     <input type="password" id="registerPassword" placeholder="密码(至少6位)" required>
                 </div>
                 <div class="form-group">
-                    <input type="tel" id="registerPhone" placeholder="手机号" maxlength="11" required>
+                    <input type="email" id="registerEmail" placeholder="邮箱(可选，用于找回密码)">
                 </div>
                 <button type="submit" class="btn-primary">注册</button>
             </form>
@@ -99,13 +99,13 @@
             
             const username = document.getElementById('registerUsername').value.trim();
             const password = document.getElementById('registerPassword').value.trim();
-            const phone = document.getElementById('registerPhone').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
             
             try {
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username, password, phone})
+                    body: JSON.stringify({username, password, email})
                 });
                 
                 const data = await response.json();
