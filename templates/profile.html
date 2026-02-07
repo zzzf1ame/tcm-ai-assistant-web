@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医AI助手 - 个人档案</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="nav-header">
+                <h2>中医AI助手</h2>
+                <p id="usageInfo">加载中...</p>
+            </div>
+            <div class="nav-menu">
+                <a href="/chat" class="nav-item">对话</a>
+                <a href="/profile" class="nav-item active">个人档案</a>
+                <button onclick="logout()" class="nav-item logout">退出登录</button>
+            </div>
+            <div class="nav-footer">
+                <p>你的私人中医顾问<br>记住你的所有信息<br>越用越懂你</p>
+            </div>
+        </nav>
+        
+        <main class="main-content">
+            <div class="profile-container">
+                <h1>个人档案</h1>
+                <p class="hint">完善档案信息，获得更精准的个性化建议</p>
+                
+                <form id="profileForm" class="profile-form">
+                    <div class="form-group">
+                        <label>年龄</label>
+                        <input type="number" id="age" min="1" max="120" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>性别</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="gender" value="男" required> 男</label>
+                            <label><input type="radio" name="gender" value="女"> 女</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>体质</label>
+                        <select id="constitution" required>
+                            <option value="">请选择</option>
+                            <option value="未测评">未测评</option>
+                            <option value="平和质">平和质</option>
+                            <option value="气虚质">气虚质</option>
+                            <option value="阳虚质">阳虚质</option>
+                            <option value="阴虚质">阴虚质</option>
+                            <option value="痰湿质">痰湿质</option>
+                            <option value="湿热质">湿热质</option>
+                            <option value="血瘀质">血瘀质</option>
+                            <option value="气郁质">气郁质</option>
+                            <option value="特禀质">特禀质</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>地区</label>
+                        <input type="text" id="location" placeholder="如：北京" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">保存档案</button>
+                </form>
+                
+                <div id="message" class="message"></div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check_auth');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+            }
+        }
+        
+        async function loadUsage() {
+            try {
+                const response = await fetch('/api/usage');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('usageInfo').textContent = 
+                        `今日使用: ${data.usage}/${data.limit}`;
+                }
+            } catch (error) {
+                console.error('加载使用情况失败:', error);
+            }
+        }
+        
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                
+                if (data.success && data.profile) {
+                    const profile = data.profile;
+                    document.getElementById('age').value = profile.age || '';
+                    
+                    const genderRadio = document.querySelector(`input[name="gender"][value="${profile.gender}"]`);
+                    if (genderRadio) genderRadio.checked = true;
+                    
+                    document.getElementById('constitution').value = profile.constitution || '';
+                    document.getElementById('location').value = profile.location || '';
+                }
+            } catch (error) {
+                console.error('加载档案失败:', error);
+            }
+        }
+        
+        function showMessage(text, isError = false) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + (isError ? 'error' : 'success');
+            
+            setTimeout(() => {
+                msg.textContent = '';
+                msg.className = 'message';
+            }, 3000);
+        }
+        
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const constitution = document.getElementById('constitution').value;
+            const location = document.getElementById('location').value.trim();
+            
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({age, gender, constitution, location})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('档案保存成功！');
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('保存失败: ' + error.message, true);
+            }
+        });
+        
+        async function logout() {
+            try {
+                await fetch('/api/logout', {method: 'POST'});
+                window.location.href = '/';
+            } catch (error) {
+                console.error('退出失败:', error);
+            }
+        }
+        
+        checkAuth();
+        loadUsage();
+        loadProfile();
+    </script>
+</body>
+</html>

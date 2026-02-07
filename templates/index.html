@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医AI助手 - 登录注册</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-box">
+            <h1 class="title">中医AI助手</h1>
+            <p class="subtitle">你的私人中医顾问</p>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">登录</button>
+                <button class="tab" onclick="switchTab('register')">注册</button>
+            </div>
+            
+            <form id="loginForm" class="form">
+                <div class="form-group">
+                    <input type="text" id="loginUsername" placeholder="用户名" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="密码" required>
+                </div>
+                <button type="submit" class="btn-primary">登录</button>
+            </form>
+            
+            <form id="registerForm" class="form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" id="registerUsername" placeholder="用户名(3-20字符)" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="registerPassword" placeholder="密码(至少6位)" required>
+                </div>
+                <div class="form-group">
+                    <input type="tel" id="registerPhone" placeholder="手机号" maxlength="11" required>
+                </div>
+                <button type="submit" class="btn-primary">注册</button>
+            </form>
+            
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'login') {
+                tabs[0].classList.add('active');
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            } else {
+                tabs[1].classList.add('active');
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            }
+            
+            document.getElementById('message').textContent = '';
+        }
+        
+        function showMessage(text, isError = false) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + (isError ? 'error' : 'success');
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('登录成功，正在跳转...');
+                    setTimeout(() => window.location.href = '/chat', 1000);
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('登录失败: ' + error.message, true);
+            }
+        });
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+            const phone = document.getElementById('registerPhone').value.trim();
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password, phone})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('注册成功，正在跳转...');
+                    setTimeout(() => window.location.href = '/chat', 1000);
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('注册失败: ' + error.message, true);
+            }
+        });
+    </script>
+</body>
+</html>

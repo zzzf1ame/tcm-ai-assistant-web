@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医AI助手 - 对话</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="nav-header">
+                <h2>中医AI助手</h2>
+                <p id="usageInfo">加载中...</p>
+            </div>
+            <div class="nav-menu">
+                <a href="/chat" class="nav-item active">对话</a>
+                <a href="/profile" class="nav-item">个人档案</a>
+                <button onclick="logout()" class="nav-item logout">退出登录</button>
+            </div>
+            <div class="nav-footer">
+                <p>你的私人中医顾问<br>记住你的所有信息<br>越用越懂你</p>
+            </div>
+        </nav>
+        
+        <main class="main-content">
+            <div class="chat-container">
+                <div id="chatDisplay" class="chat-display"></div>
+                
+                <div class="chat-input-container">
+                    <textarea id="messageInput" placeholder="输入你的问题..." rows="3"></textarea>
+                    <div class="input-actions">
+                        <button onclick="clearChat()" class="btn-secondary">清空</button>
+                        <button onclick="sendMessage()" class="btn-primary">发送</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let hasProfile = false;
+        
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check_auth');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+            }
+        }
+        
+        async function loadUsage() {
+            try {
+                const response = await fetch('/api/usage');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('usageInfo').textContent = 
+                        `今日使用: ${data.usage}/${data.limit}`;
+                }
+            } catch (error) {
+                console.error('加载使用情况失败:', error);
+            }
+        }
+        
+        async function checkProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                
+                if (data.success && data.profile) {
+                    hasProfile = true;
+                    loadConversations();
+                } else {
+                    appendSystemMessage('欢迎使用中医AI助手！请先完善个人档案以获得更好的服务。');
+                    appendSystemMessage('<a href="/profile" style="color: #8B4513; text-decoration: underline;">点击这里填写档案</a>');
+                }
+            } catch (error) {
+                console.error('检查档案失败:', error);
+            }
+        }
+        
+        async function loadConversations() {
+            try {
+                const response = await fetch('/api/conversations?limit=10');
+                const data = await response.json();
+                
+                if (data.success && data.conversations.length > 0) {
+                    appendSystemMessage('--- 最近对话 ---');
+                    data.conversations.forEach(conv => {
+                        appendUserMessage(conv.user_message);
+                        appendAIMessage(conv.ai_response);
+                    });
+                    appendSystemMessage('--- 新对话开始 ---');
+                } else {
+                    appendAIMessage('你好！我是你的中医AI助手。\n\n你可以问我关于中医养生、症状调理、方剂食疗等问题。\n\n我会基于你的个人档案给出个性化建议。');
+                }
+            } catch (error) {
+                console.error('加载对话历史失败:', error);
+            }
+        }
+        
+        function appendUserMessage(text) {
+            const chatDisplay = document.getElementById('chatDisplay');
+            const div = document.createElement('div');
+            div.className = 'message user-message';
+            div.textContent = '你: ' + text;
+            chatDisplay.appendChild(div);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+        
+        function appendAIMessage(text) {
+            const chatDisplay = document.getElementById('chatDisplay');
+            const div = document.createElement('div');
+            div.className = 'message ai-message';
+            div.innerHTML = marked.parse(text);
+            chatDisplay.appendChild(div);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+        
+        function appendSystemMessage(text) {
+            const chatDisplay = document.getElementById('chatDisplay');
+            const div = document.createElement('div');
+            div.className = 'message system-message';
+            div.innerHTML = text;
+            chatDisplay.appendChild(div);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (!hasProfile) {
+                appendSystemMessage('请先完善个人档案再开始对话。<a href="/profile" style="color: #8B4513;">前往填写</a>');
+                return;
+            }
+            
+            input.value = '';
+            appendUserMessage(message);
+            appendSystemMessage('AI正在思考...');
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message})
+                });
+                
+                const data = await response.json();
+                
+                const systemMessages = document.querySelectorAll('.system-message');
+                const lastSystemMsg = systemMessages[systemMessages.length - 1];
+                if (lastSystemMsg && lastSystemMsg.textContent === 'AI正在思考...') {
+                    lastSystemMsg.remove();
+                }
+                
+                if (data.success) {
+                    appendAIMessage(data.response);
+                    loadUsage();
+                } else {
+                    if (data.limit_reached) {
+                        appendSystemMessage('今日使用次数已达上限，请明天再来。');
+                    } else {
+                        appendSystemMessage('错误: ' + data.message);
+                    }
+                }
+            } catch (error) {
+                appendSystemMessage('发送失败: ' + error.message);
+            }
+        }
+        
+        function clearChat() {
+            if (confirm('确定要清空当前对话吗？')) {
+                document.getElementById('chatDisplay').innerHTML = '';
+                appendSystemMessage('对话已清空');
+            }
+        }
+        
+        async function logout() {
+            try {
+                await fetch('/api/logout', {method: 'POST'});
+                window.location.href = '/';
+            } catch (error) {
+                console.error('退出失败:', error);
+            }
+        }
+        
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        checkAuth();
+        loadUsage();
+        checkProfile();
+    </script>
+</body>
+</html>
