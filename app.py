@@ -13,7 +13,7 @@ app.secret_key = os.urandom(24)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 CORS(app)
 
-db = Database(config.DATABASE_PATH)
+db = Database()
 kb = KnowledgeBase(config.KNOWLEDGE_PATH)
 ai = TCMAIChat()
 

@@ -11,7 +11,10 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 AUTO_SWITCH_ON_TIMEOUT = True  # 超时时自动切换到备用API
 
 # 数据库配置
-DATABASE_PATH = "data/users.db"
+import os
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///data/users.db')
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 # 知识库配置
 KNOWLEDGE_PATH = "data/knowledge.json"
