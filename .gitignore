@@ -28,6 +28,9 @@ wheels/
 *.sqlite
 *.sqlite3
 
+!data/knowledge.json
+!data/.gitkeep
+
 .DS_Store
 .idea/
 .vscode/
