@@ -33,3 +33,6 @@ AI/LLM: Qwen3-Max / OpenAI API compatibility
 Security: Redis-based Rate Limiting, Device Fingerprinting
 
 Frontend: Markdown-enabled Reactive UI
+
+Author
+Anthony (Hong Dongfang) Senior AI Architect | Ex-CloudWalk Senior Engineer | ACM Regional Silver Medalist
