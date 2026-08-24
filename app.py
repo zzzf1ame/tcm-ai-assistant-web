@@ -9,7 +9,7 @@ from knowledge_base import KnowledgeBase
 import config
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = config.SECRET_KEY or os.urandom(24)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 CORS(app)
 
@@ -26,8 +26,10 @@ def login_required(f):
     return decorated_function
 
 def get_client_ip():
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0]
+    # 只信任反向代理追加的最后一跳，防止客户端伪造 X-Forwarded-For 绕过限流
+    forwarded = request.headers.get('X-Forwarded-For')
+    if forwarded:
+        return forwarded.split(',')[-1].strip()
     return request.remote_addr
 
 @app.route('/')
@@ -217,4 +219,5 @@ def conversations():
     return jsonify({'success': True, 'conversations': convs})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    debug = os.environ.get('FLASK_DEBUG', '').lower() in ('1', 'true')
+    app.run(host='0.0.0.0', port=5000, debug=debug)
