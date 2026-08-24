@@ -1,17 +1,25 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # API配置 - 使用通义千问
 API_PROVIDER = "qwen"  # qwen / deepseek / ernie
-QWEN_API_KEY = "sk-4f6f1c95acc8455684a9c47d6b060a2e"
+QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "")
 QWEN_API_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 
 # DeepSeek配置（备用）
-DEEPSEEK_API_KEY = "sk-9c2fcc189d734b728a89ac8510a0465f"
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+
+# Flask session 密钥（必须固定，否则重启后所有用户掉线）
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
 
 # 自动切换配置
 AUTO_SWITCH_ON_TIMEOUT = True  # 超时时自动切换到备用API
 
 # 数据库配置
-import os
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
